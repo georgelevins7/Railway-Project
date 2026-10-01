@@ -9,11 +9,37 @@ from app.models.tickets import Ticket
 from app.models.trip import Trip
 from app.models.carriage import Carriage
 from app.models.trip_stop import TripStop
+from app.models.cities import City
 from app.security import get_current_user, require_moderator
 import uuid
 
 
 router = APIRouter(prefix="/tickets", tags=["tickets"])
+
+async def ticket_response(ticket: Ticket, db: AsyncSession):
+    trip = await db.get(Trip, ticket.trip_id)
+    departure_stop = await db.get(TripStop, ticket.departure_stop_id)
+    arrival_stop = await db.get(TripStop, ticket.arrival_stop_id)
+    departure_city = await db.get(City, departure_stop.city_id)
+    arrival_city = await db.get(City, arrival_stop.city_id)
+    carriage = await db.get(Carriage, ticket.carriage_id)
+
+    return TicketResponse(
+        ticket_number=ticket.ticket_number,
+        train_number=trip.number,
+        departure_city=departure_city.name,
+        arrival_city=arrival_city.name,
+        departure_time=departure_stop.departure_time,
+        arrival_time=arrival_stop.arrival_time,
+        carriage_number=carriage.number,
+        seat_number=ticket.seat_number,
+        passenger_name=ticket.passenger_name,
+        passenger_surname=ticket.passenger_surname,
+        passenger_passport=ticket.passenger_passport,
+        price=ticket.price,
+        created_at=ticket.created_at,
+        is_active=ticket.is_active
+    )
 
 @router.post("/", response_model=TicketResponse, status_code=status.HTTP_201_CREATED)
 async def create_ticket(ticket: TicketCreate, db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
@@ -83,13 +109,13 @@ async def create_ticket(ticket: TicketCreate, db: AsyncSession = Depends(get_db)
     db.add(new_ticket)
     await db.commit()
     await db.refresh(new_ticket)
-    return new_ticket
+    return await ticket_response(new_ticket, db)
 
 @router.get("/", response_model=list[TicketResponse])
 async def get_all_tickets(db: AsyncSession = Depends(get_db), current_user: User = Depends(require_moderator)):
     result = await db.execute(select(Ticket).where(Ticket.is_active == True))
     tickets = result.scalars().all()
-    return tickets
+    return [await ticket_response(ticket, db) for ticket in tickets]
 
 @router.get("/my", response_model=list[TicketResponse])
 async def get_my_tickets(current_user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
@@ -97,7 +123,7 @@ async def get_my_tickets(current_user: User = Depends(get_current_user), db: Asy
     tickets = result.scalars().all()
     if not tickets:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No tickets found")
-    return tickets
+    return [await ticket_response(ticket, db) for ticket in tickets]
 
 @router.get("/{ticket_number}", response_model=TicketResponse)
 async def get_ticket(ticket_number: str, db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
@@ -107,7 +133,7 @@ async def get_ticket(ticket_number: str, db: AsyncSession = Depends(get_db), cur
     ticket = result.scalars().first()
     if not ticket:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Ticket not found")
-    return ticket
+    return await ticket_response(ticket, db)
 
 @router.patch("/{ticket_number}/cancel", response_model=TicketResponse)
 async def cancel_ticket(ticket_number: str, db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
@@ -121,4 +147,4 @@ async def cancel_ticket(ticket_number: str, db: AsyncSession = Depends(get_db), 
     db.add(ticket)
     await db.commit()
     await db.refresh(ticket)
-    return ticket
+    return await ticket_response(ticket, db)

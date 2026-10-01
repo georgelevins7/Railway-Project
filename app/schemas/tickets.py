@@ -42,10 +42,12 @@ class TicketCreate(BaseModel):
 
 class TicketResponse(BaseModel):
     ticket_number: str
-    trip_id: int
-    departure_stop_id: int
-    arrival_stop_id: int
-    carriage_id: int
+    train_number: int
+    departure_city: str
+    arrival_city: str
+    departure_time: datetime | None
+    arrival_time: datetime | None
+    carriage_number: int
     seat_number: int
     passenger_name: str
     passenger_surname: str
