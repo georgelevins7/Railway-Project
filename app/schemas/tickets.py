@@ -1,5 +1,6 @@
 from pydantic import BaseModel, Field, field_validator, model_validator
 from datetime import datetime
+from decimal import Decimal
 
 class TicketCreate(BaseModel):
     trip_id: int = Field(gt=0)
@@ -40,15 +41,16 @@ class TicketCreate(BaseModel):
 
 
 class TicketResponse(BaseModel):
-    ticket_number: int
+    ticket_number: str
     trip_id: int
-    departure_city: str
-    arrival_city: str
-    carriage_number: int
+    departure_stop_id: int
+    arrival_stop_id: int
+    carriage_id: int
     seat_number: int
     passenger_name: str
     passenger_surname: str
     passenger_passport: str
+    price: Decimal
     created_at: datetime
     is_active: bool
 

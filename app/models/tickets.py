@@ -1,4 +1,5 @@
-from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, String, func
+from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, String, func, Numeric
+from decimal import Decimal
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.database import AsyncBase
 from datetime import datetime
@@ -8,7 +9,7 @@ class Ticket(AsyncBase):
     __tablename__ = "tickets"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    ticket_number: Mapped[int] = mapped_column(Integer, unique=True, nullable=False)
+    ticket_number: Mapped[str] = mapped_column(String(20), unique=True, nullable=False)
 
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False)
     trip_id: Mapped[int] = mapped_column(ForeignKey("trips.id"), nullable=False)
@@ -21,6 +22,8 @@ class Ticket(AsyncBase):
     passenger_name: Mapped[str] = mapped_column(String(30), nullable=False)
     passenger_surname: Mapped[str] = mapped_column(String(30), nullable=False)
     passenger_passport: Mapped[str] = mapped_column(String(30), nullable=False)
+
+    price: Mapped[Decimal] = mapped_column(Numeric(10, 2), nullable=False)
 
     is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
     created_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), server_default=func.now())

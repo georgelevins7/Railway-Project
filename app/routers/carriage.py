@@ -21,7 +21,7 @@ async def create_carriage(carriage: CarriageCreate, db: AsyncSession = Depends(g
     existing_carriage = existing_carriage.scalars().first()
     if existing_carriage:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Carriage with this trip_id and number already exists")
-    
+
     new_carriage = Carriage(**carriage.model_dump())
     db.add(new_carriage)
     await db.commit()
